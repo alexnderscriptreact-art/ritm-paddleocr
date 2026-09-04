@@ -1,0 +1,16 @@
+# Ritm OCR (PaddleOCR) — optional companion service
+services:
+  - type: web
+    name: ritm-paddleocr
+    runtime: python
+    plan: starter
+    region: frankfurt
+    rootDir: ocr-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: OCR_CORS_ORIGINS
+        value: "*"
