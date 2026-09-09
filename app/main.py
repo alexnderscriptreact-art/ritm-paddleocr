@@ -69,6 +69,30 @@ def health():
     return {"ok": True, "engine": "paddleocr", "lang": "ru"}
 
 
+@app.get("/warmup")
+def warmup():
+    """Load PaddleOCR models into memory (cold start / keep-alive)."""
+    try:
+        get_ocr()
+        return {"ok": True, "ready": True, "engine": "paddleocr", "lang": "ru"}
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"OCR warmup failed: {exc}") from exc
+
+
+@app.on_event("startup")
+def _preload_ocr_in_background() -> None:
+    import threading
+
+    def _run() -> None:
+        try:
+            get_ocr()
+        except Exception:
+            # First real request will retry; avoid crashing the process on boot.
+            pass
+
+    threading.Thread(target=_run, name="ocr-preload", daemon=True).start()
+
+
 @app.post("/ocr/menu")
 async def ocr_menu(
     file: UploadFile = File(...),
